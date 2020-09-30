@@ -5,6 +5,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     Integer,
+    Boolean,
     String,
     ForeignKey,
 )
@@ -71,14 +72,16 @@ class Wallet(Base):
 class Transaction(Base):
     __tablename__ = "transaction"
     id = Column("id", Integer, primary_key=True)
+    is_parsed = Column("is_parsed", Boolean, default=False, nullable=False)
+    sms = Column("sms", String, nullable=False)
+    tags = Column("tags", String)
+    # -------- parsed details
     amount = Column("amount", Integer)
     txid = Column("txid", String)
-    sms = Column("sms", String)
     debit_wallet_id = Column("debit_wallet_id", Integer, ForeignKey("wallet.id"))
     credit_wallet_id = Column("credit_wallet_id", Integer, ForeignKey("wallet.id"))
     created_at = Column("created_at", DateTime, default=utcnow)
     txn_at = Column("txn_at", DateTime)
-    tags = Column("tags", String)
 
 
 Base.metadata.create_all(engine)
