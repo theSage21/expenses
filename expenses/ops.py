@@ -2,7 +2,7 @@ from . import patterns, db
 
 
 def add_expense(sms):
-    for _, reg, get_data in patterns.PATTERNS:
+    for _, reg, get_data in patterns.MAP:
         match = reg.match(sms)
         if match:
             msg = get_data(match)
@@ -23,9 +23,3 @@ def add_expense(sms):
         )
         session.add(txn)
         session.commit()
-
-
-if __name__ == "__main__":
-    for examples, reg, formatter in patterns.PATTERNS:
-        for sms in examples:
-            add_expense(sms)

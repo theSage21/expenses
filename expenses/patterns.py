@@ -11,11 +11,10 @@ fields = ["debit_ac", "amount", "timestamp", "credit_ac", "txn"]
 MSG = namedtuple("MSG", fields)
 Pattern = namedtuple("Pattern", ["examples", "regex", "to_msg"])
 
-PATTERNS = (
-    Pattern(
-        (
-            """AD-ICICIB\n\nAcct XX440 debited with INR 120,000.00 on 30-Sep-20 & Acct XX221 credited. IMPS: 027409042496. Call 18002662 for dispute or SMS BLOCK 440 to 9215676766""",
-        ),
+ICICI_IMPS = "iimps"
+
+MAP = {
+    ICICI_IMPS: (
         re.compile(
             r"AD-ICICIB\n+Acct (\S+) debited with INR (\S+) on (\S+) & Acct (\S+) credited. IMPS: (\d+).*"
         ),
@@ -27,4 +26,4 @@ PATTERNS = (
             txn=x.group(5),
         ),
     ),
-)
+}

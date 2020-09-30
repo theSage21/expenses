@@ -78,6 +78,7 @@ class Transaction(Base):
     credit_wallet_id = Column("credit_wallet_id", Integer, ForeignKey("wallet.id"))
     created_at = Column("created_at", DateTime, default=utcnow)
     txn_at = Column("txn_at", DateTime)
+    tags = Column("tags", String)
 
 
 Base.metadata.create_all(engine)
