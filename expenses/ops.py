@@ -1,30 +1,25 @@
 from . import patterns, db
+import re
+
+# Possible formats in which the amount could be expressed
+AMOUNTS = [
+    re.compile(s)
+    for s in [r".*INR[^\d]*(\S+).*" r".*Rs[^\d]*(\S+).*", r".*RS[^\d]*(\S+).*"]
+]
 
 
 def add_expense(sms):
-    for _, (reg, get_data) in patterns.MAP.items():
-        match = reg.match(sms)
-        if match:
-            msg = get_data(match)
-            with db.session() as session:
-                dw = db.Wallet.getbyname(msg.debit_ac)
-                cw = db.Wallet.getbyname(msg.credit_ac)
-                txn = db.Transaction(
-                    amount=msg.amount,
-                    txid=msg.txn,
-                    sms=sms,
-                    debit_wallet_id=dw.id,
-                    credit_wallet_id=cw.id,
-                    txn_at=msg.timestamp,
-                    is_parsed=True,
-                )
-                session.add(txn)
-                session.commit()
-            return
+    amount = None
+    for rgx in AMOUNTS:
+        amount = rgx.match(sms)
+        if amount:
+            break
     with db.session() as session:
-        txn = db.Transaction(
-            sms=sms,
-        )
-        session.add(txn)
+        if amount is None:
+            msg = db.Message(sms=sms)
+        else:
+            msg = db.Message(
+                amount=amount.group(1), sms=sms, is_parsed=True, is_expense=True
+            )
+        session.add(msg)
         session.commit()
-    return

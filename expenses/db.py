@@ -43,45 +43,16 @@ def session():
         s.close()
 
 
-# Identifies a place that the user spends money at.
-class Vendor(Base):
-    __tablename__ = "vendor"
-    id = Column("id", Integer, primary_key=True)
-    name = Column("name", String)
-
-
-# Multiple modes of payment can be attached to a single vendor
-class Wallet(Base):
-    __tablename__ = "wallet"
-    id = Column("id", Integer, primary_key=True)
-    name = Column("name", String)
-    vendor_id = Column("vendor_id", Integer, ForeignKey("vendor.id"), nullable=True)
-
-    @staticmethod
-    def getbyname(name):
-        s = sess()
-        wal = s.query(Wallet).filter(Wallet.name == name).first()
-        if wal is None:
-            wal = Wallet(name=name)
-            s.add(wal)
-            s.commit()
-        return wal
-
-
 # Each transaction must be linked to a wallet
-class Transaction(Base):
-    __tablename__ = "transaction"
+class Message(Base):
+    __tablename__ = "message"
     id = Column("id", Integer, primary_key=True)
     is_parsed = Column("is_parsed", Boolean, default=False, nullable=False)
+    is_expense = Column("is_expense", Boolean, default=None)
     sms = Column("sms", String, nullable=False)
     tags = Column("tags", String)
-    # -------- parsed details
     amount = Column("amount", Integer)
-    txid = Column("txid", String)
-    debit_wallet_id = Column("debit_wallet_id", Integer, ForeignKey("wallet.id"))
-    credit_wallet_id = Column("credit_wallet_id", Integer, ForeignKey("wallet.id"))
     created_at = Column("created_at", DateTime, default=utcnow)
-    txn_at = Column("txn_at", DateTime)
 
 
 Base.metadata.create_all(engine)
