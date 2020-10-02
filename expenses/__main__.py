@@ -3,7 +3,7 @@ import click
 
 @click.command()
 @click.option("--tgtoken", envvar="TG_TOKEN")
-@click.option("--dburl", envvar="DATABASE_URL", default="sqlite:///:memory:")
+@click.option("--dburl", envvar="DATABASE_URL", default="sqlite:///database.sqlite")
 def run(tgtoken, dburl):
     from expenses import const
 
