@@ -2,7 +2,7 @@ from . import patterns, db
 
 
 def add_expense(sms):
-    for _, reg, get_data in patterns.MAP:
+    for _, (reg, get_data) in patterns.MAP.items():
         match = reg.match(sms)
         if match:
             msg = get_data(match)

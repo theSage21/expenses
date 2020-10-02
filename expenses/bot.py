@@ -10,20 +10,25 @@ def record(update, context):
         ops.add_expense(msg)
     except Exception as e:
         logging.exception(e)
-    else:
-        text = "Something went wrong while recording the transaction."
+        text = f"Seen transaction. Unable to record."
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=text
-        reply_to_message_id=update.message.id,
+        text=text,
+        reply_to_message_id=update.message.message_id,
+    )
+
+
+def report(update, context):
+    context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Not implemented",
+        reply_to_message_id=update.message.message_id,
     )
 
 
 def runbot():
     updater = Updater(token=const.TG_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
-    report_handler = CommandHandler("report", report)
     record_handler = MessageHandler(Filters.text & (~Filters.command), record)
-    dispatcher.add_handler(report_handler)
     dispatcher.add_handler(record_handler)
     updater.start_polling()

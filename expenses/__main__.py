@@ -12,3 +12,6 @@ def run(tgtoken, dburl):
     from expenses.bot import runbot
 
     runbot()
+
+
+run()
