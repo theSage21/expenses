@@ -1,3 +1,7 @@
+from expenses import const
+
+const.DATABASE_URL = "sqlite:///:memory:"
+const.TG_TOKEN = "dummy"
 from expenses.bot import add_expense
 
 
@@ -30,7 +34,7 @@ def test_expenses_are_recorded():
     Your A/C XXXXX111111 Credited INR 111.11 on 11/11/11 -Deposit by transfer from Mr. XXXXXXXXXXXXX. Avl Bal INR 1,11,111.11""",
     ]:
         is_expense, amount = add_expense(sms)
-        assert is_expense and amount is not None
+        assert is_expense and amount is not None, sms
 
 
 def test_spam_is_ignored():
@@ -49,4 +53,4 @@ def test_spam_is_ignored():
             u.airtel.in/599""",
     ]:
         is_expense, amount = add_expense(sms)
-        assert not is_expense
+        assert not is_expense, sms

@@ -1,25 +1,24 @@
 import re
 import logging
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-from expenses import ops, const
-from . import db
+from expenses import const, db
 
 
 # Regexes to extract amounts from messages
 AMOUNTS = [
-    re.compile(s)
+    re.compile(s, re.DOTALL)
     for s in [r".*INR[^\d]*(\S+).*", r".*Rs[^\d]*(\S+).*", r".*RS[^\d]*(\S+).*"]
 ]
 # Record only these patterns as expenses so that we don't accidentally mark
 # spam smses as valid expenses.
 EXPENSES = [
-    re.compile(s)
+    re.compile(s, re.DOTALL | re.IGNORECASE)
     for s in [
         r".*your acct [x\d]+ has been credited with inr.*the avbl bal is.*",
-        r".*your a\/c [x\d]+ credited inr.*avbl bal is.*",
+        r".*your a\/c [x\d]+ credited inr.*bal.*",
         r".*your a\/c no\. [x\d]+ is credited.*linked to mobile.*",
         r".*acct [x\d\*]+ debited with inr [\d\.,]+.*imps",
-        r".*rs [\d\.,]+ debited from .+upi ref no.*",
+        r".*rs[\.\s]*[\d\.,]+ debited from.*vpa.*upi ref no.*",
         r".*via debit card [\dx]+ at.*",
         r".*sip purchase of rs[\d\.,]+ in folio.*",
         r".*your sip purchase in folio.*under hdfc",
@@ -32,6 +31,7 @@ def add_expense(sms):
     for rgx in AMOUNTS:
         amount = rgx.match(sms)
         if amount:
+            amount = amount.group(1)
             break
     is_expense = False
     _sms = " ".join(sms.lower().split())
@@ -43,7 +43,7 @@ def add_expense(sms):
     with db.session() as session:
         msg = db.Message(sms=sms)
         if amount is not None:
-            msg.amount = amount.group(1)
+            msg.amount = amount
             msg.is_parsed = True
             msg.is_expense = is_expense
         session.add(msg)
