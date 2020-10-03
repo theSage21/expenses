@@ -30,28 +30,38 @@ TAGS = [
     for prefix, s in [
         ("bank", r".*(HDFC).*"),
         ("bank", r".*(ICICI).*"),
+        ("bank", r".*(IPRUMF).*"),
         ("bank", r".*(SBI).*"),
-        ("upi", r".*to\s+vpa\s+(\w@\w).*upi ref no.*"),
-        ("acnt", r".*acct\s+(\w)\s+debited\s+with\s+inr.*"),
+        ("upi", r".*to\s+vpa\s+(\w+@\w+).*upi ref no.*"),
+        ("dac", r".*from\s+a\/c\s+([\w\*]+)\s+on.*"),
+        ("dac", r".*acct\s+(\w+)\s+debited\s+with\s+inr.*"),
         (
-            "acnt",
-            r".*a\/c\s+no[\s\.]+(\w)\s+is\s+credited\s+by.*",
+            "cac",
+            r".*a\/c\s+no[\s\.]+(\w+)\s+is\s+credited\s+by.*",
         ),
         (
-            "acnt",
-            r".*a\/c\s+(\w)\s+credited\s.*",
+            "cac",
+            r".*a\/c\s+(\w+)\s+credited\s.*",
         ),
         (
-            "acnt",
-            r".*acct\s+(\w)\s+has\s+been\s+credited\s+with.*",
+            "cac",
+            r".*acct\s+(\w+)\s+has\s+been\s+credited\s+with.*",
+        ),
+        (
+            "cac",
+            r".*acct\s+(\w+)\s+credited.*",
+        ),
+        (
+            "cac",
+            r".*a\/c\s+(\w+)\s+credited.*",
         ),
         (
             "card",
-            r".*spent\s+via\s+debit\s+card\s+(\w)at.*",
+            r".*via\s+debit\s+card\s+(\w+)\s+at.*",
         ),
         (
             "vendor",
-            r".*spent\s+via\s+debit\s+card\s+\wat\s+(\w)\s+on.*",
+            r".*via\s+debit\s+card\s+\w+\s+at\s+(\S+).*",
         ),
     ]
 ]
@@ -74,14 +84,13 @@ def parse(sms: str) -> (bool, int):
     return is_expense, amount
 
 
-def tag_message(sms):
+def tag_message(sms: str) -> set:
     tags = set()
     for prefix, rgx in TAGS:
         match = rgx.match(sms)
         if match:
-            tags.add(f"{prefix}:match.group(1)")
-    tags = " ".join(sorted(tags))
-    return f" {tags} "
+            tags.add(f"{prefix}:{match.group(1)}")
+    return tags
 
 
 def record(update, context):
@@ -96,7 +105,12 @@ def record(update, context):
         logging.exception(e)
         text = f"Unable to record."
     finally:
-        tags = tag_message(sms)
+        tags = ""
+        if is_expense:
+            tags = tuple(sorted(tag_message(sms)))
+            text += "\nTAGS\n" + " ".join(f"#{t}" for t in tags)
+            tags = " ".join(Tags)
+            tags = f" {tags} "
         with db.session() as session:
             session.add(
                 db.Message(
