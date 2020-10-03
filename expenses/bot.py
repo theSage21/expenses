@@ -25,6 +25,37 @@ EXPENSES = [
     ]
 ]
 
+TAGS = [
+    (prefix, re.compile(s, re.DOTALL | re.IGNORECASE))
+    for prefix, s in [
+        ("bank", r".*(HDFC).*"),
+        ("bank", r".*(ICICI).*"),
+        ("bank", r".*(SBI).*"),
+        ("upi", r".*to\s+vpa\s+(\w@\w).*upi ref no.*"),
+        ("acnt", r".*acct\s+(\w)\s+debited\s+with\s+inr.*"),
+        (
+            "acnt",
+            r".*a\/c\s+no[\s\.]+(\w)\s+is\s+credited\s+by.*",
+        ),
+        (
+            "acnt",
+            r".*a\/c\s+(\w)\s+credited\s.*",
+        ),
+        (
+            "acnt",
+            r".*acct\s+(\w)\s+has\s+been\s+credited\s+with.*",
+        ),
+        (
+            "card",
+            r".*spent\s+via\s+debit\s+card\s+(\w)at.*",
+        ),
+        (
+            "vendor",
+            r".*spent\s+via\s+debit\s+card\s+\wat\s+(\w)\s+on.*",
+        ),
+    ]
+]
+
 
 def parse(sms: str) -> (bool, int):
     amount = None
@@ -43,6 +74,16 @@ def parse(sms: str) -> (bool, int):
     return is_expense, amount
 
 
+def tag_message(sms):
+    tags = set()
+    for prefix, rgx in TAGS:
+        match = rgx.match(sms)
+        if match:
+            tags.add(f"{prefix}:match.group(1)")
+    tags = " ".join(sorted(tags))
+    return f" {tags} "
+
+
 def record(update, context):
     msg = update.message.text
     is_expense, amount, is_parsed = False, None, False
@@ -55,10 +96,15 @@ def record(update, context):
         logging.exception(e)
         text = f"Unable to record."
     finally:
+        tags = tag_message(sms)
         with db.session() as session:
             session.add(
                 db.Message(
-                    sms=sms, is_expense=is_expense, amount=amount, is_parsed=is_parsed
+                    sms=sms,
+                    is_expense=is_expense,
+                    amount=amount,
+                    is_parsed=is_parsed,
+                    tags=tags,
                 )
             )
             session.commit()
