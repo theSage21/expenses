@@ -6,8 +6,8 @@ from expenses import const, db
 
 # Regexes to extract amounts from messages
 AMOUNTS = [
-    re.compile(s, re.DOTALL)
-    for s in [r".*INR[^\d]*(\S+).*", r".*Rs[^\d]*(\S+).*", r".*RS[^\d]*(\S+).*"]
+    re.compile(s, re.DOTALL | re.IGNORECASE)
+    for s in [r".*INR[^\d]*(\S+).*", r".*RS[^\d]*(\S+).*"]
 ]
 # Record only these patterns as expenses so that we don't accidentally mark
 # spam smses as valid expenses.
@@ -26,7 +26,7 @@ EXPENSES = [
 ]
 
 
-def add_expense(sms):
+def parse(sms: str) -> (bool, int):
     amount = None
     for rgx in AMOUNTS:
         amount = rgx.match(sms)
@@ -40,26 +40,28 @@ def add_expense(sms):
         if match:
             is_expense = True
             break
-    with db.session() as session:
-        msg = db.Message(sms=sms)
-        if amount is not None:
-            msg.amount = amount
-            msg.is_parsed = True
-            msg.is_expense = is_expense
-        session.add(msg)
-        session.commit()
     return is_expense, amount
 
 
 def record(update, context):
     msg = update.message.text
+    is_expense, amount, is_parsed = False, None, False
     try:
-        is_expense, amount = add_expense(msg)
-        is_expense = "expense" if is_expense else "non-expense"
-        text = f"Recorded {is_expense} of {amount}."
+        is_expense, amount = parse(msg)
+        spent = "spent" if is_expense else "notSpent"
+        text = f"{spent:>9}: {amount}."
+        is_parsed = True
     except Exception as e:
         logging.exception(e)
-        text = f"Unable to record"
+        text = f"Unable to record."
+    finally:
+        with db.session() as session:
+            session.add(
+                db.Message(
+                    sms=sms, is_expense=is_expense, amount=amount, is_parsed=is_parsed
+                )
+            )
+            session.commit()
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=text,
@@ -70,7 +72,7 @@ def record(update, context):
 def report(update, context):
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="Not implemented",
+        text="Not implemented yet.",
         reply_to_message_id=update.message.message_id,
     )
 

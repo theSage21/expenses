@@ -2,7 +2,7 @@ from expenses import const
 
 const.DATABASE_URL = "sqlite:///:memory:"
 const.TG_TOKEN = "dummy"
-from expenses.bot import add_expense
+from expenses.bot import parse
 
 
 def test_expenses_are_recorded():
@@ -36,7 +36,7 @@ def test_expenses_are_recorded():
 
             ALERT:You've spent Rs.1111.11 via Debit Card xx1111 at www.hotstar.co on 1111-11-11:11:11:11.Avl Bal Rs.11111.11.Not you?Call 11111111111.""",
     ]:
-        is_expense, amount = add_expense(sms)
+        is_expense, amount = parse(sms)
         assert is_expense and amount is not None, sms
 
 
@@ -63,5 +63,5 @@ def test_spam_is_ignored():
 
             Arriving today: Naturalis Essence of Nature Peppermint Essential Oil ... will be delivered by AmzAgent(+111111111111 PIN 1111). Track: https://amzn.in/d/aDBWTR1""",
     ]:
-        is_expense, amount = add_expense(sms)
+        is_expense, amount = parse(sms)
         assert not is_expense, sms
