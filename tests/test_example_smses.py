@@ -1,7 +1,7 @@
 from expenses.bot import add_expense
 
 
-def test_matching():
+def test_expenses_are_recorded():
     for sms in [
         """AX-HDFCBK
 
@@ -29,5 +29,24 @@ def test_matching():
 
     Your A/C XXXXX111111 Credited INR 111.11 on 11/11/11 -Deposit by transfer from Mr. XXXXXXXXXXXXX. Avl Bal INR 1,11,111.11""",
     ]:
-        is_parsed, is_expense = add_expense(sms)
-        assert is_parsed and is_expense
+        is_expense, amount = add_expense(sms)
+        assert is_expense and amount is not None
+
+
+def test_spam_is_ignored():
+    for sms in [
+        """BP-CHAYOS
+
+            Chaayos is calling! Special weekend Offer-50% OFF on all your favorites.Valid on Dine in/Delivery!Use Code GJ50.Max Rs100 OFF on min bill Rs100 bit.ly/36wlb6G""",
+        """AD-ICICIB
+
+            Dear Customer, Your Pre-Approved ICICI Bank Credit Card is just 2 steps away. As discussed with our executive, kindly log in to your account through Net""",
+        """AL-650006
+
+            Cheer for your favorite team!
+            Watch Dream11 IPL LIVE only on Disney+ Hotstar VIP
+            Get 1 year subscription,2GB/day,UL calls for 56days at Rs599
+            u.airtel.in/599""",
+    ]:
+        is_expense, amount = add_expense(sms)
+        assert not is_expense

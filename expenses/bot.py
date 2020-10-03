@@ -5,12 +5,13 @@ from expenses import ops, const
 from . import db
 
 
-# Possible formats in which the amount could be expressed
+# Regexes to extract amounts from messages
 AMOUNTS = [
     re.compile(s)
     for s in [r".*INR[^\d]*(\S+).*", r".*Rs[^\d]*(\S+).*", r".*RS[^\d]*(\S+).*"]
 ]
-# Record only these patterns as expenses
+# Record only these patterns as expenses so that we don't accidentally mark
+# spam smses as valid expenses.
 EXPENSES = [
     re.compile(s)
     for s in [
@@ -40,25 +41,25 @@ def add_expense(sms):
             is_expense = True
             break
     with db.session() as session:
-        if amount is None:
-            msg = db.Message(sms=sms)
-        else:
-            msg = db.Message(
-                amount=amount.group(1), sms=sms, is_parsed=True, is_expense=is_expense
-            )
+        msg = db.Message(sms=sms)
+        if amount is not None:
+            msg.amount = amount.group(1)
+            msg.is_parsed = True
+            msg.is_expense = is_expense
         session.add(msg)
         session.commit()
-    return is_parsed, is_expense
+    return is_expense, amount
 
 
 def record(update, context):
     msg = update.message.text
-    text = "Recorded transaction."
     try:
-        ops.add_expense(msg)
+        is_expense, amount = add_expense(msg)
+        is_expense = "expense" if is_expense else "non-expense"
+        text = f"Recorded {is_expense} of {amount}."
     except Exception as e:
         logging.exception(e)
-        text = f"Seen transaction. Unable to record."
+        text = f"Unable to record"
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=text,
