@@ -25,6 +25,8 @@ EXPENSES = [
     ]
 ]
 
+# Extract information from messages and add them to the tags field. This will
+# allow for easier grouping and categorization.
 TAGS = [
     (prefix, re.compile(s, re.DOTALL | re.IGNORECASE))
     for prefix, s in [
@@ -61,7 +63,7 @@ TAGS = [
         ),
         (
             "vendor",
-            r".*via\s+debit\s+card\s+\w+\s+at\s+(\S+).*",
+            r".*via\s+debit\s+card\s+\w+\s+at\s+(.+)\s+on.*",
         ),
     ]
 ]
@@ -99,7 +101,7 @@ def record(update, context):
     try:
         is_expense, amount = parse(msg)
         spent = "spent" if is_expense else "notSpent"
-        text = f"{spent:>9}: {amount}."
+        text = f"{spent:>9}: {amount or 'anything'}."
         is_parsed = True
     except Exception as e:
         logging.exception(e)
