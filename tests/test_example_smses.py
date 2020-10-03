@@ -32,6 +32,9 @@ def test_expenses_are_recorded():
         """BW-SCISMS
 
     Your A/C XXXXX111111 Credited INR 111.11 on 11/11/11 -Deposit by transfer from Mr. XXXXXXXXXXXXX. Avl Bal INR 1,11,111.11""",
+        """AD-HDFCBK
+
+            ALERT:You've spent Rs.1111.11 via Debit Card xx1111 at www.hotstar.co on 1111-11-11:11:11:11.Avl Bal Rs.11111.11.Not you?Call 11111111111.""",
     ]:
         is_expense, amount = add_expense(sms)
         assert is_expense and amount is not None, sms
@@ -41,16 +44,24 @@ def test_spam_is_ignored():
     for sms in [
         """BP-CHAYOS
 
-            Chaayos is calling! Special weekend Offer-50% OFF on all your favorites.Valid on Dine in/Delivery!Use Code GJ50.Max Rs100 OFF on min bill Rs100 bit.ly/36wlb6G""",
+            Chaayos is calling! Special weekend Offer-11% OFF on all your favorites.Valid on Dine in/Delivery!Use Code GJ11.Max Rs111 OFF on min bill Rs111 bit.ly/11wlb1G""",
         """AD-ICICIB
 
-            Dear Customer, Your Pre-Approved ICICI Bank Credit Card is just 2 steps away. As discussed with our executive, kindly log in to your account through Net""",
-        """AL-650006
+            Dear Customer, Your Pre-Approved ICICI Bank Credit Card is just 1 steps away. As discussed with our executive, kindly log in to your account through Net""",
+        """AL-111111
 
             Cheer for your favorite team!
             Watch Dream11 IPL LIVE only on Disney+ Hotstar VIP
-            Get 1 year subscription,2GB/day,UL calls for 56days at Rs599
-            u.airtel.in/599""",
+            Get 1 year subscription,1GB/day,UL calls for 11days at Rs111
+            u.airtel.in/111""",
+        """JK-111111
+
+            Want to watch Dream11 IPL on Disney+ Hotstar VIP?
+            Get Rs.111 Jio Cricket Plan and watch LIVE CRICKET MATCHES
+            Recharge NOW https://rb.gy/1xvfyy""",
+        """11011011
+
+            Arriving today: Naturalis Essence of Nature Peppermint Essential Oil ... will be delivered by AmzAgent(+111111111111 PIN 1111). Track: https://amzn.in/d/aDBWTR1""",
     ]:
         is_expense, amount = add_expense(sms)
         assert not is_expense, sms
