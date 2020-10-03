@@ -91,7 +91,7 @@ def tag_message(sms: str) -> set:
     for prefix, rgx in TAGS:
         match = rgx.match(sms)
         if match:
-            tags.add(f"{prefix}:{match.group(1)}")
+            tags.add(f"{prefix}:{match.group(1).strip()}")
     return tags
 
 
