@@ -8,7 +8,21 @@ from . import db
 # Possible formats in which the amount could be expressed
 AMOUNTS = [
     re.compile(s)
-    for s in [r".*INR[^\d]*(\S+).*" r".*Rs[^\d]*(\S+).*", r".*RS[^\d]*(\S+).*"]
+    for s in [r".*INR[^\d]*(\S+).*", r".*Rs[^\d]*(\S+).*", r".*RS[^\d]*(\S+).*"]
+]
+# Record only these patterns as expenses
+EXPENSES = [
+    re.compile(s)
+    for s in [
+        r".*your acct [x\d]+ has been credited with inr.*the avbl bal is.*",
+        r".*your a\/c [x\d]+ credited inr.*avbl bal is.*",
+        r".*your a\/c no\. [x\d]+ is credited.*linked to mobile.*",
+        r".*acct [x\d\*]+ debited with inr [\d\.,]+.*imps",
+        r".*rs [\d\.,]+ debited from .+upi ref no.*",
+        r".*via debit card [\dx]+ at.*",
+        r".*sip purchase of rs[\d\.,]+ in folio.*",
+        r".*your sip purchase in folio.*under hdfc",
+    ]
 ]
 
 
@@ -18,15 +32,23 @@ def add_expense(sms):
         amount = rgx.match(sms)
         if amount:
             break
+    is_expense = False
+    _sms = " ".join(sms.lower().split())
+    for rgx in EXPENSES:
+        match = rgx.match(_sms)
+        if match:
+            is_expense = True
+            break
     with db.session() as session:
         if amount is None:
             msg = db.Message(sms=sms)
         else:
             msg = db.Message(
-                amount=amount.group(1), sms=sms, is_parsed=True, is_expense=False
+                amount=amount.group(1), sms=sms, is_parsed=True, is_expense=is_expense
             )
         session.add(msg)
         session.commit()
+    return is_parsed, is_expense
 
 
 def record(update, context):
