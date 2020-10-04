@@ -96,10 +96,10 @@ def tag_message(sms: str) -> set:
 
 
 def record(update, context):
-    msg = update.message.text
+    sms = update.message.text
     is_expense, amount, is_parsed = False, None, False
     try:
-        is_expense, amount = parse(msg)
+        is_expense, amount = parse(sms)
         spent = "spent" if is_expense else "notSpent"
         text = f"{spent:>9}: {amount or 'anything'}."
         is_parsed = True
