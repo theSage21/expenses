@@ -35,12 +35,17 @@ python -m virtualenv venv
 ```
 source venv/bin/activate
 ```
+**6.** Intsall Dependencies
 
-**6.** Create a private group in telegram. 
+```
+python -m pip install -r requirements.txt
+```
 
-**7.** Create a telegram bot using botfather. Turn off group privacy in bot settings.
+**7.** Create a private group in telegram. 
 
-**8.** Run this code using the telegram token given to you.
+**8.** Create a telegram bot using botfather. Turn off group privacy in bot settings.
+
+**9.** Run this code using the telegram token given to you.
 
 ```
 python -m expenses --tgtoken <paste-your-token> --dburl 'sqlite:///db.sql'
