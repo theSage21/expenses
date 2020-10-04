@@ -7,8 +7,8 @@ from expenses import const, db
 
 # Regexes to extract amounts from messages
 AMOUNTS = [
-    re.compile(s, re.DOTALL)
-    for s in [r".*INR[^\d]*(\S+).*", r".*Rs[^\d]*(\S+).*", r".*RS[^\d]*(\S+).*"]
+    re.compile(s, re.DOTALL | re.IGNORECASE)
+    for s in [r".*INR[^\d]*(\S+).*", r".*RS[^\d]*(\S+).*"]
 ]
 # Record only these patterns as expenses so that we don't accidentally mark
 # spam smses as valid expenses.
@@ -26,8 +26,51 @@ EXPENSES = [
     ]
 ]
 
+# Extract information from messages and add them to the tags field. This will
+# allow for easier grouping and categorization.
+TAGS = [
+    (prefix, re.compile(s, re.DOTALL | re.IGNORECASE))
+    for prefix, s in [
+        ("bank", r".*(HDFC).*"),
+        ("bank", r".*(ICICI).*"),
+        ("bank", r".*(IPRUMF).*"),
+        ("bank", r".*(SBI).*"),
+        ("upi", r".*to\s+vpa\s+(\w+@\w+).*upi ref no.*"),
+        ("dac", r".*from\s+a\/c\s+([\w\*]+)\s+on.*"),
+        ("dac", r".*acct\s+(\w+)\s+debited\s+with\s+inr.*"),
+        (
+            "cac",
+            r".*a\/c\s+no[\s\.]+(\w+)\s+is\s+credited\s+by.*",
+        ),
+        (
+            "cac",
+            r".*a\/c\s+(\w+)\s+credited\s.*",
+        ),
+        (
+            "cac",
+            r".*acct\s+(\w+)\s+has\s+been\s+credited\s+with.*",
+        ),
+        (
+            "cac",
+            r".*acct\s+(\w+)\s+credited.*",
+        ),
+        (
+            "cac",
+            r".*a\/c\s+(\w+)\s+credited.*",
+        ),
+        (
+            "card",
+            r".*via\s+debit\s+card\s+(\w+)\s+at.*",
+        ),
+        (
+            "vendor",
+            r".*via\s+debit\s+card\s+\w+\s+at\s+(.+)\s+on.*",
+        ),
+    ]
+]
 
-def add_expense(sms):
+
+def parse(sms: str) -> (bool, int):
     amount = None
     for rgx in AMOUNTS:
         amount = rgx.match(sms)
@@ -41,26 +84,47 @@ def add_expense(sms):
         if match:
             is_expense = True
             break
-    with db.session() as session:
-        msg = db.Message(sms=sms)
-        if amount is not None:
-            msg.amount = amount
-            msg.is_parsed = True
-            msg.is_expense = is_expense
-        session.add(msg)
-        session.commit()
     return is_expense, amount
 
 
+def tag_message(sms: str) -> set:
+    tags = set()
+    for prefix, rgx in TAGS:
+        match = rgx.match(sms)
+        if match:
+            tags.add(f"{prefix}:{match.group(1).strip()}")
+    return tags
+
+
 def record(update, context):
-    msg = update.message.text
+    sms = update.message.text
+    is_expense, amount, is_parsed = False, None, False
     try:
-        is_expense, amount = add_expense(msg)
-        is_expense = "expense" if is_expense else "non-expense"
-        text = f"Recorded {is_expense} of {amount}."
+        is_expense, amount = parse(sms)
+        spent = "spent" if is_expense else "notSpent"
+        text = f"{spent:>9}: {amount or 'anything'}."
+        is_parsed = True
     except Exception as e:
         logging.exception(e)
-        text = f"Unable to record"
+        text = f"Unable to record."
+    finally:
+        tags = ""
+        if is_expense:
+            tags = tuple(sorted(tag_message(sms)))
+            text += "\nTAGS\n" + " ".join(f"#{t}" for t in tags)
+            tags = " ".join(Tags)
+            tags = f" {tags} "
+        with db.session() as session:
+            session.add(
+                db.Message(
+                    sms=sms,
+                    is_expense=is_expense,
+                    amount=amount,
+                    is_parsed=is_parsed,
+                    tags=tags,
+                )
+            )
+            session.commit()
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=text,
