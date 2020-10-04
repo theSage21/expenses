@@ -1,4 +1,5 @@
 import re
+import sqlite3
 import logging
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from expenses import const, db
@@ -68,16 +69,27 @@ def record(update, context):
 
 
 def report(update, context):
+    conn = sqlite3.connect('db.sql')
+    c = conn.cursor()
+    c.execute("select SUM(amount) from 'message' where is_expense=1")
+    total_exp = c.fetchall()
+    c.execute("select created_at, amount from 'message'")
+    show_all = c.fetchall()
+    show_all_amt = ""
+    for val in show_all:
+        show_all_amt+='\n'
+        show_all_amt+=str(val[0])+' - '+str(val[1])
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="Not implemented",
+        text=show_all_amt+'\n'+"Total expenditure: "+str(total_exp[0][0]),
         reply_to_message_id=update.message.message_id,
     )
-
 
 def runbot():
     updater = Updater(token=const.TG_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
     record_handler = MessageHandler(Filters.text & (~Filters.command), record)
+    report_handler = CommandHandler('report',report)
     dispatcher.add_handler(record_handler)
+    dispatcher.add_handler(report_handler)
     updater.start_polling()
