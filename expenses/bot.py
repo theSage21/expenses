@@ -1,5 +1,8 @@
 import re
+import calendar
+import pendulum
 import logging
+import sqlalchemy as sa
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from expenses import const, db
 
@@ -111,7 +114,7 @@ def record(update, context):
         if is_expense:
             tags = tuple(sorted(tag_message(sms)))
             text += "\nTAGS\n" + " ".join(f"#{t}" for t in tags)
-            tags = " ".join(Tags)
+            tags = " ".join(tags)
             tags = f" {tags} "
         with db.session() as session:
             session.add(
@@ -131,10 +134,30 @@ def record(update, context):
     )
 
 
-def report(update, context):
+def monthly_report():
+    now = db.utcnow()
+    rows = []
+    with db.session() as session:
+        for row in (
+            session.query(db.Message)
+            .filter(db.Message.is_expense == True, db.Message.amount.isnot(None))
+            .group_by(sa.func.extract("month", db.Message.created_at))
+            .order_by(db.Message.created_at.desc())
+            .with_entities(
+                sa.func.extract("month", db.Message.created_at),
+                sa.func.sum(db.Message.amount),
+            )
+        ):
+            rows.append((calendar.month_name[row[0]][:3], row[1]))
+    return rows
+
+
+def send_report(update, context):
+    rows = monthly_report()
+    report = "\n".join(f"{month}: {total}" for month, total in rows)
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="Not implemented yet.",
+        text=report,
         reply_to_message_id=update.message.message_id,
     )
 
@@ -143,5 +166,7 @@ def runbot():
     updater = Updater(token=const.TG_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
     record_handler = MessageHandler(Filters.text & (~Filters.command), record)
+    report_handler = CommandHandler("report", send_report)
     dispatcher.add_handler(record_handler)
+    dispatcher.add_handler(report_handler)
     updater.start_polling()
