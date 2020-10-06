@@ -154,12 +154,28 @@ def monthly_report():
     return rows
 
 
+def humanize(amt):
+    if amt < 1000:
+        return f"{amt:<6}"
+    if amt < 1_00_000:
+        d = amt / 1000
+        d = round(d, 2)
+        d = int(d) if d == int(d) else d
+        d = f"{d}K"
+        return f"{d:<6}"
+    d = amt / 1_00_000
+    d = round(d, 2)
+    d = int(d) if d == int(d) else d
+    d = f"{d}L"
+    return f"{d:<6}"
+
+
 def send_report(update, context):
     rows = monthly_report()
-    report = "\n".join(f"{month}: {total}" for month, total in rows)
+    report = "\n".join(f"{month}: {humanize(total)} ({total})" for month, total in rows)
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=report,
+        text=f"```\n{report}\n```",
         reply_to_message_id=update.message.message_id,
     )
 
