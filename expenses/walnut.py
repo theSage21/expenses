@@ -13,8 +13,9 @@ def import_walnut_report(path):
             except ValueError:
                 continue
             msg = db.Message(
-                sms="Walnut import",
+                sms="",
                 is_expense=EXPENSE == "Yes",
+                is_imported=True,
                 amount=int(float(AMOUNT.replace(",", ""))),
                 created_at=created_at,
             )

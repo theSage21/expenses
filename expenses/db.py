@@ -46,6 +46,7 @@ class Message(Base):
     __tablename__ = "message"
     id = Column("id", Integer, primary_key=True)
     is_parsed = Column("is_parsed", Boolean, default=False, nullable=False)
+    is_imported = Column("is_imported", Boolean, default=False, nullable=False)
     is_expense = Column("is_expense", Boolean, default=None)
     sms = Column("sms", String, nullable=False)
     tags = Column("tags", String)
