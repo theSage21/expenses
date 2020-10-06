@@ -4,14 +4,20 @@ import click
 @click.command()
 @click.option("--tgtoken", envvar="TG_TOKEN")
 @click.option("--dburl", envvar="DATABASE_URL", default="sqlite:///database.sqlite")
-def run(tgtoken, dburl):
+@click.option("--walnut", default=None)
+def run(tgtoken, dburl, walnut):
     from expenses import const
 
     const.DATABASE_URL = dburl
     const.TG_TOKEN = tgtoken
-    from expenses.bot import runbot
+    if walnut is not None:
+        from expenses.walnut import import_walnut_report
 
-    runbot()
+        import_walnut_report(walnut)
+    else:
+        from expenses.bot import runbot
+
+        runbot()
 
 
 run()

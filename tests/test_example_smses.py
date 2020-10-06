@@ -131,3 +131,13 @@ def test_tags():
     ]:
         tags = tag_message(sms)
         assert tags == expected, sms
+
+
+def test_multiple_matches():
+    for sms in [
+        """AD-HDFCBK
+
+    ALERT:You've spent Rs.1111.11 via Debit Card xx7211 at AMAZON on 2020-10-06:08:21:43.Avl Bal Rs.11111.11.Not you?Call 18002586161."""
+    ]:
+        is_expense, amount = parse(sms)
+        assert is_expense and amount == "1111.11"

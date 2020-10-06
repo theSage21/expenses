@@ -10,8 +10,9 @@ from expenses import const, db
 # Regexes to extract amounts from messages
 AMOUNTS = [
     re.compile(s, re.DOTALL | re.IGNORECASE)
-    for s in [r".*INR[^\d]*(\S+).*", r".*RS[^\d]*(\S+).*"]
+    for s in [r"INR[^\d]*(\S+)", r"RS[^\d]*(\S+)"]
 ]
+INR, RS = AMOUNTS
 # Record only these patterns as expenses so that we don't accidentally mark
 # spam smses as valid expenses.
 EXPENSES = [
@@ -75,9 +76,10 @@ TAGS = [
 def parse(sms: str) -> (bool, int):
     amount = None
     for rgx in AMOUNTS:
-        amount = rgx.match(sms)
+        amount = rgx.findall(sms)
         if amount:
-            amount = amount.group(1)
+            # The first amount is usually the actual amount
+            amount = amount[0]
             break
     is_expense = False
     _sms = " ".join(sms.lower().split())
