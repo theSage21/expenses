@@ -176,6 +176,7 @@ def send_report(update, context):
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=f"```\n{report}\n```",
+        parse_mode="Markdown",
         reply_to_message_id=update.message.message_id,
     )
 
