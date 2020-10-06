@@ -76,7 +76,7 @@ TAGS = [
 def parse(sms: str) -> (bool, int):
     amount = None
     for rgx in AMOUNTS:
-        amount = rgx.findall(sms)
+        amount = rgx.findall(sms) or None
         if amount:
             # The first amount is usually the actual amount
             amount = amount[0]
