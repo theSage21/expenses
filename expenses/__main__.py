@@ -6,6 +6,7 @@ import click
 @click.option("--dburl", envvar="DATABASE_URL", default="sqlite:///database.sqlite")
 @click.option("--walnut", default=None)
 def run(tgtoken, dburl, walnut):
+    # pylint: disable=import-outside-toplevel
     from expenses import const
 
     const.DATABASE_URL = dburl
@@ -20,4 +21,4 @@ def run(tgtoken, dburl, walnut):
         runbot()
 
 
-run()
+run()  # pylint: disable=no-value-for-parameter

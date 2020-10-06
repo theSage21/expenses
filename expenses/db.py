@@ -1,16 +1,13 @@
+import pendulum
+from contextlib import contextmanager
 from sqlalchemy import (
     create_engine,
-    MetaData,
-    Table,
     Column,
     DateTime,
     Integer,
     Boolean,
     String,
-    ForeignKey,
 )
-import pendulum
-from contextlib import contextmanager
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from . import const
@@ -40,11 +37,12 @@ def session():
     finally:
         popped = sessStack.pop(-1)
         assert popped == s
-        s.close()
+        s.close()  # pylint: disable=no-member
 
 
 # Each transaction must be linked to a wallet
 class Message(Base):
+    "Holds an sms and it's related information."
     __tablename__ = "message"
     id = Column("id", Integer, primary_key=True)
     is_parsed = Column("is_parsed", Boolean, default=False, nullable=False)

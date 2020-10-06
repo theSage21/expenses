@@ -1,6 +1,5 @@
 import re
 import calendar
-import pendulum
 import logging
 import sqlalchemy as sa
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
@@ -108,9 +107,9 @@ def record(update, context):
         spent = "spent" if is_expense else "notSpent"
         text = f"{spent:>9}: {amount or 'anything'}."
         is_parsed = True
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         logging.exception(e)
-        text = f"Unable to record."
+        text = "Unable to record."
     finally:
         tags = ""
         if is_expense:
@@ -119,7 +118,7 @@ def record(update, context):
             tags = " ".join(tags)
             tags = f" {tags} "
         with db.session() as session:
-            session.add(
+            session.add(  # pylint: disable=no-member
                 db.Message(
                     sms=sms,
                     is_expense=is_expense,
@@ -128,7 +127,7 @@ def record(update, context):
                     tags=tags,
                 )
             )
-            session.commit()
+            session.commit()  # pylint: disable=no-member
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=text,
@@ -143,9 +142,9 @@ def monthly_report():
     rows = []
     with db.session() as session:
         for row in (
-            session.query(db.Message)
+            session.query(db.Message)  # pylint: disable=no-member
             .filter(
-                db.Message.is_expense == True,
+                db.Message.is_expense == True,  # pylint: disable=singleton-comparison
                 db.Message.amount.isnot(None),
                 db.Message.created_at >= last_5_months,
             )

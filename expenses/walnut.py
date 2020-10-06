@@ -8,7 +8,7 @@ def import_walnut_report(path):
     with open(path, "r") as fl, db.session() as session:
         for row in csv.reader(fl):
             try:
-                DATE, TIME, PLACE, AMOUNT, ACCOUNT, EXPENSE, CATEGORY, TAGS, NOTE = row
+                DATE, TIME, _, AMOUNT, _, EXPENSE, _, _, _ = row
                 created_at = pendulum.from_format(f"{DATE} {TIME}", "DD-MM-YY HH:mm A")
             except ValueError:
                 continue
@@ -18,6 +18,6 @@ def import_walnut_report(path):
                 amount=int(float(AMOUNT.replace(",", ""))),
                 created_at=created_at,
             )
-            session.add(msg)
+            session.add(msg)  # pylint: disable=no-member
             print(msg.created_at, msg.amount, "imported")
-        session.commit()
+        session.commit()  # pylint: disable=no-member
