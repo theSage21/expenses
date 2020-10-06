@@ -73,60 +73,60 @@ def test_tags():
             """AX-HDFCBK
 
     ALERT:Rs.111.11 spent via Debit Card xx1111 at NETFLIX                   on Oct  1 1111 11:11PM without PIN/OTP.Not you?Call 11111111111.""",
-            {"bank:HDFC", "card:xx1111", "vendor:NETFLIX"},
+            {"bank.HDFC", "card.xx1111", "vendor.NETFLIX"},
         ),
         (
             """VK-HDFCBK
 
     Rs 1111.11 debited from a/c **1111 on 11-11-11 to VPA 1111111111@okbizaxis(UPI Ref No 111111111111). Not you? Call on 11111111111 to report""",
-            {"bank:HDFC", "upi:1111111111@okbizaxis", "dac:**1111"},
+            {"bank.HDFC", "upi.1111111111@okbizaxis", "dac.**1111"},
         ),
         (
             """VD-HDFCMF
 
     Your SIP Purchase in Folio 11111111/11 under HDFC Mid-Cap Opportunities Fund-Gr. for Rs. 1,111.11 has been processed at the NAV of 11.111 for 11.111 units .""",
-            {"bank:HDFC"},
+            {"bank.HDFC"},
         ),
         (
             """VD-IPRUMF
 
     Dear Investor,Your SIP Purchase of Rs.1,111.11 in Folio 11111111/11 - Bluechip Fund - Growth for 11.111 units has been processed for NAV of 11.11 -IPRUMF""",
             {
-                "bank:IPRUMF",
+                "bank.IPRUMF",
             },
         ),
         (
             """AD-ICICIB
 
     Acct XX111 debited with INR 111,111.11 on 11-Sep-11 & Acct XX111 credited. IMPS: 111111111111. Call 11111111 for dispute or SMS BLOCK 111 to 1111111111""",
-            {"bank:ICICI", "dac:XX111", "cac:XX111"},
+            {"bank.ICICI", "dac.XX111", "cac.XX111"},
         ),
         (
             """JD-SBIINB
 
     Your a/c no. XXXXXXXX1111 is credited by Rs.111111.11 on 11-11-11 by a/c linked to mobile 1XXXXXX111-XXXXXXX XXXXXX (IMPS Ref no 111111111111). Download""",
             {
-                "bank:SBI",
-                "cac:XXXXXXXX1111",
+                "bank.SBI",
+                "cac.XXXXXXXX1111",
             },
         ),
         (
             """AD-ICICIB
 
     Dear Customer, your Acct XX111 has been credited with INR 1,11,111.11 on 11-Sep-11. Info:INF*111111111111*SAL SEPT11. The Avbl Bal is INR 1,11,111.11""",
-            {"bank:ICICI", "cac:XX111"},
+            {"bank.ICICI", "cac.XX111"},
         ),
         (
             """BW-SCISMS
 
     Your A/C XXXXX111111 Credited INR 111.11 on 11/11/11 -Deposit by transfer from Mr. XXXXXXXXXXXXX. Avl Bal INR 1,11,111.11""",
-            {"cac:XXXXX111111"},
+            {"cac.XXXXX111111"},
         ),
         (
             """AD-HDFCBK
 
             ALERT:You've spent Rs.1111.11 via Debit Card xx1111 at www.hotstar.co on 1111-11-11:11:11:11.Avl Bal Rs.11111.11.Not you?Call 11111111111.""",
-            {"bank:HDFC", "card:xx1111", "vendor:www.hotstar.co"},
+            {"bank.HDFC", "card.xx1111", "vendor.www.hotstar.co"},
         ),
     ]:
         tags = tag_message(sms)

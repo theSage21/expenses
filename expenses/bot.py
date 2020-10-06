@@ -137,12 +137,18 @@ def record(update, context):
 
 
 def monthly_report():
-    now = db.utcnow()
+    last_5_months = (
+        db.utcnow().subtract(months=5).set(day=1, hour=0, minute=0, second=0)
+    )
     rows = []
     with db.session() as session:
         for row in (
             session.query(db.Message)
-            .filter(db.Message.is_expense == True, db.Message.amount.isnot(None))
+            .filter(
+                db.Message.is_expense == True,
+                db.Message.amount.isnot(None),
+                db.Message.created_at >= last_5_months,
+            )
             .group_by(sa.func.extract("month", db.Message.created_at))
             .order_by(db.Message.created_at.desc())
             .with_entities(
