@@ -4,7 +4,8 @@
 ## Features
 
 - Replies to each message and marks it as recorded.
-- Automatically tags messages with information found in the sms.
+- Automatically tags messages with information found in the sms so that you can quickly search for it later on in telegram.
+- You can import Walnut expense reports to backfill your database.
 - `/report` returns monthly totals
   
 ## Pre-requisites

@@ -96,7 +96,7 @@ def tag_message(sms: str) -> set:
     for prefix, rgx in TAGS:
         match = rgx.match(sms)
         if match:
-            tags.add(f"{prefix}:{match.group(1).strip()}")
+            tags.add(f"{prefix}.{match.group(1).strip()}")
     return tags
 
 
@@ -115,7 +115,7 @@ def record(update, context):
         tags = ""
         if is_expense:
             tags = tuple(sorted(tag_message(sms)))
-            text += "\nTAGS\n" + " ".join(f"#{t}" for t in tags)
+            text += "\n".join(f"#{t}" for t in tags)
             tags = " ".join(tags)
             tags = f" {tags} "
         with db.session() as session:
