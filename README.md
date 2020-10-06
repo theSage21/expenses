@@ -1,13 +1,17 @@
 # Expenses
 
-  A Telegram bot that helps you keep a track of your spending. 
+A Telegram bot that helps you keep a track of your spending. 
   
 ## Features
 
-- Replies to each message and marks it as recorded.
+- Auto track smses when coupled with TelegramSms android app.
 - Automatically tags messages with information found in the sms so that you can quickly search for it later on in telegram.
 - You can import Walnut expense reports to backfill your database.
-- `/report` returns monthly totals
+- `/report` returns monthly totals.
+
+## Coming soon
+
+- You can set budgets so that you get warned if you overshoot.
   
 ## Pre-requisites
 
