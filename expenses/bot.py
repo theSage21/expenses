@@ -193,9 +193,9 @@ def weekly_report():
             )
         ):
             rows.append((row[0], row[1]))
-    min_week = min([w for w, _ in rows])
+    this_week = max([w for w, _ in rows])
     rows = [
-        (f"{w - min_week} week" if w != min_week else "This week", total)
+        (f"{w - this_week} week" if w != this_week else "This week", total)
         for w, total in rows
     ]
     return rows
@@ -221,8 +221,7 @@ def runbot():
     updater = Updater(token=const.TG_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
     record_handler = MessageHandler(Filters.text & (~Filters.command), record)
-    report_handler = CommandHandler("monthly", make_reporter(monthly_report))
-    report_handler = CommandHandler("weekly", make_reporter(weekly_report))
     dispatcher.add_handler(record_handler)
-    dispatcher.add_handler(report_handler)
+    dispatcher.add_handler(CommandHandler("monthly", make_reporter(monthly_report)))
+    dispatcher.add_handler(CommandHandler("weekly", make_reporter(weekly_report)))
     updater.start_polling()
