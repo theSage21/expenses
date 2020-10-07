@@ -5,7 +5,7 @@ const.TG_TOKEN = "dummy"
 from expenses.bot import parse, tag_message
 
 
-def test_expenses_are_recorded():
+def test_correct_expenses_are_recorded():
     for sms in [
         """AX-HDFCBK
 
@@ -41,30 +41,53 @@ def test_expenses_are_recorded():
 
 
 def test_spam_is_ignored():
-    for sms in [
-        """BP-CHAYOS
+    for sms, has_amt in [
+        (
+            """BP-CHAYOS
 
             Chaayos is calling! Special weekend Offer-11% OFF on all your favorites.Valid on Dine in/Delivery!Use Code GJ11.Max Rs111 OFF on min bill Rs111 bit.ly/11wlb1G""",
-        """AD-ICICIB
+            True,
+        ),
+        (
+            """AD-ICICIB
 
             Dear Customer, Your Pre-Approved ICICI Bank Credit Card is just 1 steps away. As discussed with our executive, kindly log in to your account through Net""",
-        """AL-111111
+            False,
+        ),
+        (
+            """AL-111111
 
             Cheer for your favorite team!
             Watch Dream11 IPL LIVE only on Disney+ Hotstar VIP
             Get 1 year subscription,1GB/day,UL calls for 11days at Rs111
             u.airtel.in/111""",
-        """JK-111111
+            True,
+        ),
+        (
+            """JK-111111
 
             Want to watch Dream11 IPL on Disney+ Hotstar VIP?
             Get Rs.111 Jio Cricket Plan and watch LIVE CRICKET MATCHES
             Recharge NOW https://rb.gy/1xvfyy""",
-        """11011011
+            True,
+        ),
+        (
+            """11011011
 
             Arriving today: Naturalis Essence of Nature Peppermint Essential Oil ... will be delivered by AmzAgent(+111111111111 PIN 1111). Track: https://amzn.in/d/aDBWTR1""",
+            False,
+        ),
+        (
+            """BW-600500
+
+            Level up your game! Avail special offers on exclusive gaming accessories only at HP World Stores- Vaishali Nagar, 111111111111. Unsub:https://bit.ly/2HNmWlB""",
+            False,
+        ),
     ]:
         is_expense, amount = parse(sms)
         assert not is_expense, sms
+        found_amt = amount is not None
+        assert found_amt == has_amt, sms
 
 
 def test_tags():

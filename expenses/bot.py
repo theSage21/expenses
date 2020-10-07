@@ -9,7 +9,7 @@ from expenses import const, db
 # Regexes to extract amounts from messages
 AMOUNTS = [
     re.compile(s, re.DOTALL | re.IGNORECASE)
-    for s in [r"INR[^\d]*(\S+)", r"RS[^\d]*(\S+)"]
+    for s in [r"INR[\s\.\:]*([\d,]+\.?[\d]+)", r"RS[\s\.\:]*([\d,]+\.?[\d]+)"]
 ]
 INR, RS = AMOUNTS
 # Record only these patterns as expenses so that we don't accidentally mark
@@ -114,7 +114,6 @@ def record(update, context):
         tags = ""
         if is_expense:
             tags = tuple(sorted(tag_message(sms)))
-            text += "\n".join(f"#{t}" for t in tags)
             tags = " ".join(tags)
             tags = f" {tags} "
         with db.session() as session:
@@ -133,6 +132,22 @@ def record(update, context):
         text=text,
         reply_to_message_id=update.message.message_id,
     )
+
+
+def humanize(amt):
+    if amt < 1000:
+        return f"{amt:<6}"
+    if amt < 1_00_000:
+        d = amt / 1000
+        d = round(d, 2)
+        d = int(d) if d == int(d) else d
+        d = f"{d}K"
+        return f"{d:<6}"
+    d = amt / 1_00_000
+    d = round(d, 2)
+    d = int(d) if d == int(d) else d
+    d = f"{d}L"
+    return f"{d:<6}"
 
 
 def monthly_report():
@@ -159,38 +174,55 @@ def monthly_report():
     return rows
 
 
-def humanize(amt):
-    if amt < 1000:
-        return f"{amt:<6}"
-    if amt < 1_00_000:
-        d = amt / 1000
-        d = round(d, 2)
-        d = int(d) if d == int(d) else d
-        d = f"{d}K"
-        return f"{d:<6}"
-    d = amt / 1_00_000
-    d = round(d, 2)
-    d = int(d) if d == int(d) else d
-    d = f"{d}L"
-    return f"{d:<6}"
+def weekly_report():
+    last_5_weeks = db.utcnow().subtract(days=5 * 7).set(hour=0, minute=0, second=0)
+    rows = []
+    with db.session() as session:
+        for row in (
+            session.query(db.Message)  # pylint: disable=no-member
+            .filter(
+                db.Message.is_expense == True,  # pylint: disable=singleton-comparison
+                db.Message.amount.isnot(None),
+                db.Message.created_at >= last_5_weeks,
+            )
+            .group_by(sa.func.extract("week", db.Message.created_at))
+            .order_by(db.Message.created_at.desc())
+            .with_entities(
+                sa.func.extract("week", db.Message.created_at),
+                sa.func.sum(db.Message.amount),
+            )
+        ):
+            rows.append((row[0], row[1]))
+    min_week = min([w for w, _ in rows])
+    rows = [
+        (f"{w - min_week} week" if w != min_week else "This week", total)
+        for w, total in rows
+    ]
+    return rows
 
 
-def send_report(update, context):
-    rows = monthly_report()
-    report = "\n".join(f"{month}: {humanize(total)} ({total})" for month, total in rows)
-    context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=f"```\n{report}\n```",
-        parse_mode="Markdown",
-        reply_to_message_id=update.message.message_id,
-    )
+def make_reporter(row_builder):
+    def send_report(update, context):
+        rows = row_builder()
+        report = "\n".join(
+            f"{period}: {humanize(total)} ({total})" for period, total in rows
+        )
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f"```\n{report}\n```",
+            parse_mode="Markdown",
+            reply_to_message_id=update.message.message_id,
+        )
+
+    return send_report
 
 
 def runbot():
     updater = Updater(token=const.TG_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
     record_handler = MessageHandler(Filters.text & (~Filters.command), record)
-    report_handler = CommandHandler("report", send_report)
+    report_handler = CommandHandler("monthly", make_reporter(monthly_report))
+    report_handler = CommandHandler("weekly", make_reporter(weekly_report))
     dispatcher.add_handler(record_handler)
     dispatcher.add_handler(report_handler)
     updater.start_polling()

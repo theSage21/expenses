@@ -2,7 +2,7 @@ from expenses import const
 
 const.DATABASE_URL = "sqlite:///:memory:"
 const.TG_TOKEN = "dummy"
-from expenses.bot import parse, monthly_report
+from expenses.bot import parse, monthly_report, weekly_report
 from expenses import db
 
 
@@ -49,3 +49,4 @@ def test_expenses_are_recorded():
             )
             session.commit()
     assert monthly_report() != []
+    assert weekly_report() != []
