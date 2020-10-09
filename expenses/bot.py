@@ -127,10 +127,9 @@ def record(update, context):
                 )
             )
             session.commit()  # pylint: disable=no-member
+    update.message.delete()
     context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=text,
-        reply_to_message_id=update.message.message_id,
+        chat_id=update.effective_chat.id, text=f"{sms}\n===============\n{text}"
     )
 
 
