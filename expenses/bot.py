@@ -1,6 +1,7 @@
 import re
 import calendar
 import logging
+from collections import namedtuple
 import sqlalchemy as sa
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from expenses import const, db
@@ -30,42 +31,47 @@ EXPENSES = [
 
 # Extract information from messages and add them to the tags field. This will
 # allow for easier grouping and categorization.
+TAG = namedtuple("TAG", "BANK UPI DEBIT_ACCOUNT CREDIT_ACCOUNT CARD VENDOR")(
+    "bank", "upi", "dac", "cac", "card", "vendor"
+)
+
+
 TAGS = [
     (prefix, re.compile(s, re.DOTALL | re.IGNORECASE))
     for prefix, s in [
-        ("bank", r".*(HDFC).*"),
-        ("bank", r".*(ICICI).*"),
-        ("bank", r".*(IPRUMF).*"),
-        ("bank", r".*(SBI).*"),
-        ("upi", r".*to\s+vpa\s+(\w+@\w+).*upi ref no.*"),
-        ("dac", r".*from\s+a\/c\s+([\w\*]+)\s+on.*"),
-        ("dac", r".*acct\s+(\w+)\s+debited\s+with\s+inr.*"),
+        (TAG.BANK, r".*(HDFC).*"),
+        (TAG.BANK, r".*(ICICI).*"),
+        (TAG.BANK, r".*(IPRUMF).*"),
+        (TAG.BANK, r".*(SBI).*"),
+        (TAG.UPI, r".*to\s+vpa\s+(\w+@\w+).*upi ref no.*"),
+        (TAG.DEBIT_ACCOUNT, r".*from\s+a\/c\s+([\w\*]+)\s+on.*"),
+        (TAG.DEBIT_ACCOUNT, r".*acct\s+(\w+)\s+debited\s+with\s+inr.*"),
         (
-            "cac",
+            TAG.CREDIT_ACCOUNT,
             r".*a\/c\s+no[\s\.]+(\w+)\s+is\s+credited\s+by.*",
         ),
         (
-            "cac",
+            TAG.CREDIT_ACCOUNT,
             r".*a\/c\s+(\w+)\s+credited\s.*",
         ),
         (
-            "cac",
+            TAG.CREDIT_ACCOUNT,
             r".*acct\s+(\w+)\s+has\s+been\s+credited\s+with.*",
         ),
         (
-            "cac",
+            TAG.CREDIT_ACCOUNT,
             r".*acct\s+(\w+)\s+credited.*",
         ),
         (
-            "cac",
+            TAG.CREDIT_ACCOUNT,
             r".*a\/c\s+(\w+)\s+credited.*",
         ),
         (
-            "card",
+            TAG.CARD,
             r".*via\s+debit\s+card\s+(\w+)\s+at.*",
         ),
         (
-            "vendor",
+            TAG.VENDOR,
             r".*via\s+debit\s+card\s+\w+\s+at\s+(.+)\s+on.*",
         ),
     ]
@@ -101,26 +107,28 @@ def tag_message(sms: str) -> set:
 
 def record(update, context):
     sms = update.message.text
-    is_expense, amount, is_parsed = False, None, False
+    is_expense, amount, is_parsed, is_debit = False, None, False, False
+    tags = ""
     try:
         is_expense, amount = parse(sms)
-        spent = "spent" if is_expense else "notSpent"
+        if is_expense:
+            tags = tuple(sorted(tag_message(sms)))
+            if any(t.startswith(TAGS.DEBIT_ACCOUNT) for t in tags):
+                is_debit = True
+            tags = " ".join(tags)
+            tags = f" {tags} "
+        spent = "spent" if is_debit else "notSpent"
         text = f"{spent:>9}: {amount or 'anything'}."
         is_parsed = True
     except Exception as e:  # pylint: disable=broad-except
         logging.exception(e)
         text = "Unable to record."
     finally:
-        tags = ""
-        if is_expense:
-            tags = tuple(sorted(tag_message(sms)))
-            tags = " ".join(tags)
-            tags = f" {tags} "
         with db.session() as session:
             session.add(  # pylint: disable=no-member
                 db.Message(
                     sms=sms,
-                    is_expense=is_expense,
+                    is_expense=is_debit,
                     amount=amount,
                     is_parsed=is_parsed,
                     tags=tags,
@@ -128,9 +136,10 @@ def record(update, context):
             )
             session.commit()  # pylint: disable=no-member
     update.message.delete()
-    context.bot.send_message(
-        chat_id=update.effective_chat.id, text=f"{sms}\n===============\n{text}"
-    )
+    if is_expense:
+        context.bot.send_message(
+            chat_id=update.effective_chat.id, text=f"{sms}\n===============\n{text}"
+        )
 
 
 def humanize(amt):
